@@ -6,47 +6,45 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
-import javax.transaction.Transactional;
+import javax.persistence.criteria.CriteriaQuery;
 
 
 public class DAOImp<T> implements DAO<T>{
-
-	@PersistenceContext
-	EntityManager em;
-	protected Class<T> entity;
 	
-	@Transactional
+	private EntityManager em;
+	private Class<T> entity;
+
+	public DAOImp(EntityManager em, Class<T> entity) {
+		super();
+		this.em = em;
+		this.entity = entity;
+	}
 	@Override
 	public T salvar(T entidade) {
 		em.persist(entidade);
 		return entidade;
 	}
-	@Transactional
 	@Override
 	public T alterar(T entidade) {
 		em.merge(entidade);
 		return entidade;
 	}
-	@Transactional
 	@Override
 	public void remover(T entidade) {
 		em.remove(entidade);
-		
+
 	}
-	@Transactional
 	@Override
 	public T procurarPeloId(Long id) {
 		return em.find(entity, id);
 	}
-	@Transactional
 	@Override
 	public List<T> listarTudo() {
-		return em.createQuery("SELECT entity FROM " + entity.getSimpleName() + " entity", entity)
-				.getResultList();
+		CriteriaQuery<T> query = em.getCriteriaBuilder().createQuery(entity);
+    	query.from(entity);
+    	return em.createQuery(query).getResultList();
 	}
-	@Transactional
 	@Override
 	public List<T> procurarComHQL(String hql, Object... values) {
 		TypedQuery<T> query = em.createQuery(hql, entity);
@@ -55,7 +53,6 @@ public class DAOImp<T> implements DAO<T>{
 			query.setParameter(paramsId.get(i), values[i]);
 		return query.getResultList();
 	}
-	
 	private List<String> pegarParametros(String hql) {
 		Pattern pattern = Pattern.compile("(:\\w+)");
 		Matcher matcher = pattern.matcher(hql);
